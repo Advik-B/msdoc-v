@@ -9,6 +9,9 @@ import formatting
 import writer
 import crypto
 import tests
+import objects
+import streams
+import structures
 
 // Document represents a loaded Microsoft Word .doc file with full functionality.
 pub struct Document {
@@ -19,6 +22,7 @@ mut:
 	macro_extractor     &macros.MacroExtractor
 	metadata_extractor  &metadata.MetadataExtractor
 	formatting_extractor &formatting.FormattingExtractor
+	object_pool         ?&objects.ObjectPool
 	decryptor           ?&crypto.RC4
 }
 
@@ -34,6 +38,7 @@ pub fn open(filename string) !&Document {
 	macro_extractor := macros.new_macro_extractor(reader)
 	metadata_extractor := metadata.new_metadata_extractor(reader)
 	formatting_extractor := formatting.new_formatting_extractor()
+	object_pool := objects.new_object_pool(reader)
 	
 	return &Document{
 		filename: filename
@@ -42,6 +47,7 @@ pub fn open(filename string) !&Document {
 		macro_extractor: macro_extractor
 		metadata_extractor: metadata_extractor
 		formatting_extractor: formatting_extractor
+		object_pool: object_pool
 		decryptor: none
 	}
 }
@@ -229,6 +235,31 @@ pub fn new_writer() writer.DocumentWriter {
 	return writer.new_document_writer()
 }
 
+// has_embedded_objects returns true if the document contains embedded objects.
+pub fn (mut d Document) has_embedded_objects() bool {
+	if mut obj_pool := d.object_pool {
+		return obj_pool.has_objects()
+	}
+	return false
+}
+
+// get_embedded_objects returns all embedded objects in the document.
+pub fn (mut d Document) get_embedded_objects() !map[u32]&objects.EmbeddedObject {
+	if mut obj_pool := d.object_pool {
+		obj_pool.load_objects()!
+		return obj_pool.get_all_objects()
+	}
+	return error('object pool not initialized')
+}
+
+// get_embedded_object returns a specific embedded object by position.
+pub fn (mut d Document) get_embedded_object(position u32) !&objects.EmbeddedObject {
+	if mut obj_pool := d.object_pool {
+		return obj_pool.extract_object(position)
+	}
+	return error('object pool not initialized')
+}
+
 fn main() {
 	args := os.args
 	
@@ -238,6 +269,8 @@ fn main() {
 		println('  msdoc <filename.doc>           - Analyze document')
 		println('  msdoc --test                   - Run test suite')
 		println('  msdoc --create <filename.doc>  - Create sample document')
+		println('  msdoc --liststreams <file.doc> - List all OLE2 streams')
+		println('  msdoc --dump <file.doc>        - Full document dump with text and metadata')
 		return
 	}
 	
@@ -254,6 +287,30 @@ fn main() {
 		
 		create_sample_document(args[2]) or {
 			eprintln('Error creating document: $err')
+		}
+		return
+	}
+	
+	if args[1] == '--liststreams' {
+		if args.len < 3 {
+			println('Error: Please provide input filename')
+			return
+		}
+		
+		list_streams_command(args[2]) or {
+			eprintln('Error listing streams: $err')
+		}
+		return
+	}
+	
+	if args[1] == '--dump' {
+		if args.len < 3 {
+			println('Error: Please provide input filename')
+			return
+		}
+		
+		dump_document_command(args[2]) or {
+			eprintln('Error dumping document: $err')
 		}
 		return
 	}
@@ -352,4 +409,63 @@ fn create_sample_document(filename string) ! {
 	
 	writer.save(filename)!
 	println('Sample document created: $filename')
+}
+
+// list_streams_command lists all streams in a .doc file (equivalent to cmd/liststreams.go)
+fn list_streams_command(filename string) ! {
+	reader := ole2.new_reader(filename)!
+	
+	streams := reader.list_streams()
+	println('Streams found:')
+	for stream in streams {
+		println("- '$stream'")
+	}
+}
+
+// dump_document_command performs full document analysis (equivalent to cmd/msdocdump/main.go)
+fn dump_document_command(filename string) ! {
+	doc := open(filename)!
+	
+	// Extract text with markdown formatting (hyperlinks as [text](url))
+	text := doc.markdown_text()!
+	println('=== Document Text ===')
+	println(text)
+	
+	// Extract metadata
+	metadata := doc.get_metadata()!
+	println('\n=== Metadata ===')
+	if metadata.title.len > 0 {
+		println('Title: ${metadata.title}')
+	}
+	if metadata.subject.len > 0 {
+		println('Subject: ${metadata.subject}')
+	}
+	if metadata.author.len > 0 {
+		println('Author: ${metadata.author}')
+	}
+	if metadata.keywords.len > 0 {
+		println('Keywords: ${metadata.keywords}')
+	}
+	if metadata.comments.len > 0 {
+		println('Comments: ${metadata.comments}')
+	}
+	if metadata.application_name.len > 0 {
+		println('Application Name: ${metadata.application_name}')
+	}
+	if metadata.company.len > 0 {
+		println('Company: ${metadata.company}')
+	}
+	if metadata.manager.len > 0 {
+		println('Manager: ${metadata.manager}')
+	}
+	if metadata.category.len > 0 {
+		println('Category: ${metadata.category}')
+	}
+	if metadata.content_status.len > 0 {
+		println('Content Status: ${metadata.content_status}')
+	}
+	if metadata.content_type.len > 0 {
+		println('Content Type: ${metadata.content_type}')
+	}
+	println('Created: ${metadata.created}')
 }
