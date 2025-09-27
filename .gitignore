@@ -1,4 +1,11 @@
-msdocdump
+# V build artifacts
+msdoc
 debug_*
-find_text
-liststreams
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
