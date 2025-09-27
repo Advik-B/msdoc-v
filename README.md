@@ -6,7 +6,7 @@
 
 MsDoc-V is a V library that implements the Microsoft Word Binary File Format (.doc) specification (MS-DOC). It allows you to extract text content and metadata from Word 97-2003 documents.
 
-**Note**: This is a complete V port of the original Go implementation with full feature parity. The Go codebase has been removed as the V implementation provides all the same functionality with better performance and memory safety.
+**Note**: This is now a complete V-only implementation with ALL features ported from the original Go version. The Go codebase has been entirely removed as the V implementation provides all functionality including advanced features like embedded object extraction, stream processing, specialized structures, and command-line utilities.
 
 ## Features
 
@@ -18,10 +18,14 @@ MsDoc-V is a V library that implements the Microsoft Word Binary File Format (.d
 - ✅ **Unicode Support**: Handles both ANSI and Unicode text content
 - ✅ **Piece Table Processing**: Correctly reconstructs fragmented text
 - ✅ **Encryption Support**: Full support for encrypted and password-protected documents
+- ✅ **Embedded Objects**: Extract images, charts, OLE objects, and other embedded content
 - ✅ **VBA Macro Support**: Extract and decompile VBA macros and projects
+- ✅ **Advanced Structures**: PCD, SEP, fields parsing for advanced document analysis
+- ✅ **Stream Processing**: Advanced stream helpers for Data, Table, and WordDocument streams
 - ✅ **Complete Metadata**: Full SummaryInformation and DocumentSummaryInformation parsing
 - ✅ **Document Creation**: Create new .doc files from scratch
 - ✅ **Document Modification**: Modify existing documents (text, formatting, metadata)
+- ✅ **Command Line Tools**: Integrated utilities for document analysis and stream inspection
 - ✅ **Write Support**: Full document creation and modification capabilities
 
 ## Installation
@@ -82,6 +86,12 @@ You can use the built binary to analyze .doc files:
 
 # Create a sample document
 ./msdoc --create output.doc
+
+# List all streams in a document (debugging)
+./msdoc --liststreams sample.doc
+
+# Full document dump with text and metadata
+./msdoc --dump sample.doc
 ```
 
 ## Advanced Features
@@ -95,6 +105,14 @@ doc := main.open_with_password('encrypted.doc', 'password123')!
 // Extract formatted text with markdown
 markdown := doc.markdown_text()!
 println(markdown)
+
+// Extract embedded objects
+if mut doc.has_embedded_objects() {
+    objects := doc.get_embedded_objects()!
+    for position, obj in objects {
+        println('Object at $position: ${obj.get_object_info()}')
+    }
+}
 
 // Create new documents
 mut writer := main.new_writer()
