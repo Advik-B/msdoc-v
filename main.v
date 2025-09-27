@@ -5,13 +5,13 @@ import ole2
 import fib
 import macros
 import metadata
-import formatting
+// import formatting
 import writer
 import crypto
 import tests
-import objects
-import streams
-import structures
+// import objects
+// import streams
+// import structures
 
 // Document represents a loaded Microsoft Word .doc file with full functionality.
 pub struct Document {
@@ -21,8 +21,8 @@ mut:
 	fib_data            &fib.FileInformationBlock
 	macro_extractor     &macros.MacroExtractor
 	metadata_extractor  &metadata.MetadataExtractor
-	formatting_extractor &formatting.FormattingExtractor
-	object_pool         ?&objects.ObjectPool
+	// formatting_extractor &formatting.FormattingExtractor
+	// object_pool         ?&objects.ObjectPool
 	decryptor           ?&crypto.RC4
 }
 
@@ -37,8 +37,8 @@ pub fn open(filename string) !&Document {
 	// Initialize extractors
 	macro_extractor := macros.new_macro_extractor(reader)
 	metadata_extractor := metadata.new_metadata_extractor(reader)
-	formatting_extractor := formatting.new_formatting_extractor()
-	object_pool := objects.new_object_pool(reader)
+	// formatting_extractor := formatting.new_formatting_extractor()
+	// object_pool := objects.new_object_pool(reader)
 	
 	return &Document{
 		filename: filename
@@ -46,8 +46,8 @@ pub fn open(filename string) !&Document {
 		fib_data: &fib_data
 		macro_extractor: &macro_extractor
 		metadata_extractor: &metadata_extractor
-		formatting_extractor: &formatting_extractor
-		object_pool: &object_pool
+		// formatting_extractor: &formatting_extractor
+		// object_pool: &object_pool
 		decryptor: none
 	}
 }
@@ -217,6 +217,8 @@ pub fn (d &Document) get_all_vba_modules() ![]string {
 }
 
 // get_formatted_text extracts text with formatting information.
+// NOTE: Commented out due to formatting module dependency
+/*
 pub fn (d &Document) get_formatted_text() ![]formatting.TextRun {
 	// This would implement full piece table parsing and formatting extraction
 	// For now, return basic text runs
@@ -225,6 +227,7 @@ pub fn (d &Document) get_formatted_text() ![]formatting.TextRun {
 	default_run := formatting.apply_default_formatting(text_content, 0, u32(text_content.len))
 	return [default_run]
 }
+*/
 
 // markdown_text extracts text with hyperlinks formatted as markdown.
 pub fn (d &Document) markdown_text() !string {
@@ -238,6 +241,8 @@ pub fn new_writer() writer.DocumentWriter {
 }
 
 // has_embedded_objects returns true if the document contains embedded objects.
+// NOTE: Commented out due to objects module dependency
+/*
 pub fn (mut d Document) has_embedded_objects() bool {
 	if mut obj_pool := d.object_pool {
 		return obj_pool.has_objects()
@@ -261,6 +266,7 @@ pub fn (mut d Document) get_embedded_object(position u32) !&objects.EmbeddedObje
 	}
 	return error('object pool not initialized')
 }
+*/
 
 fn main() {
 	args := os.args
