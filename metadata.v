@@ -103,7 +103,7 @@ fn (me &MetadataExtractor) parse_property_values(data []u8, mut metadata Documen
 	// The actual implementation would properly parse the property set format
 	
 	mut offset := 48
-	while offset < data.len - 4 {
+	for offset < data.len - 4 {
 		// Look for property length indicators
 		if offset + 4 < data.len {
 			prop_len := u32(data[offset]) | (u32(data[offset+1]) << 8) |
@@ -137,7 +137,7 @@ fn (me &MetadataExtractor) parse_document_properties(data []u8, mut metadata Doc
 	// Similar to parse_property_values but for document-specific properties
 	mut offset := 48
 	
-	while offset < data.len - 4 {
+	for offset < data.len - 4 {
 		if offset + 4 < data.len {
 			prop_len := u32(data[offset]) | (u32(data[offset+1]) << 8) |
 			          (u32(data[offset+2]) << 16) | (u32(data[offset+3]) << 24)
@@ -173,7 +173,7 @@ fn (me &MetadataExtractor) extract_utf16_string(data []u8) ?string {
 	mut result := ''
 	mut i := 0
 	
-	while i < data.len - 1 {
+	for i < data.len - 1 {
 		char_code := u16(data[i]) | (u16(data[i+1]) << 8)
 		
 		if char_code == 0 {

@@ -70,8 +70,8 @@ pub fn (project &VBAProject) get_all_module_names() []string {
 
 // has_macro_functions checks if any module contains macro functions.
 pub fn (project &VBAProject) has_macro_functions() bool {
-	for _, module in project.modules {
-		if module.code.contains('Sub ') || module.code.contains('Function ') {
+	for _, mod in project.modules {
+		if mod.code.contains('Sub ') || mod.code.contains('Function ') {
 			return true
 		}
 	}
@@ -81,9 +81,9 @@ pub fn (project &VBAProject) has_macro_functions() bool {
 // get_modules_by_type returns all modules of the specified type.
 pub fn (project &VBAProject) get_modules_by_type(module_type ModuleType) []&Module {
 	mut modules := []&Module{}
-	for _, module in project.modules {
-		if module.module_type == module_type {
-			modules << module
+	for _, mod in project.modules {
+		if mod.module_type == module_type {
+			modules << mod
 		}
 	}
 	return modules
@@ -171,15 +171,15 @@ fn (me &MacroExtractor) extract_modules(mut project VBAProject) ! {
 	
 	for module_name in module_names {
 		if module_data := me.reader.read_stream(module_name) {
-			module := me.parse_module_data(module_name, module_data)!
-			project.modules[module_name] = &module
+			mod := me.parse_module_data(module_name, module_data)!
+			project.modules[module_name] = &mod
 		}
 	}
 }
 
 // parse_module_data parses VBA module data from a stream.
 fn (me &MacroExtractor) parse_module_data(module_name string, data []u8) !Module {
-	mut module := Module{
+	mut mod := Module{
 		name: module_name
 		module_type: .standard
 		code: ''
@@ -195,26 +195,26 @@ fn (me &MacroExtractor) parse_module_data(module_name string, data []u8) !Module
 		// Check if data looks like compressed VBA
 		if data[0] == 0x01 {
 			// Compressed VBA code
-			module.compressed = true
+			mod.compressed = true
 			if decompressed := me.decompress_vba(data) {
-				module.code = decompressed
+				mod.code = decompressed
 			}
 		} else {
 			// Try to extract as plain text
-			module.code = me.extract_text_from_data(data)
+			mod.code = me.extract_text_from_data(data)
 		}
 	}
 
 	// Determine module type based on name
 	if module_name.contains('ThisDocument') {
-		module.module_type = .document
+		mod.module_type = .document
 	} else if module_name.starts_with('Class') {
-		module.module_type = .class
+		mod.module_type = .class
 	} else if module_name.contains('Form') {
-		module.module_type = .form
+		mod.module_type = .form
 	}
 
-	return module
+	return mod
 }
 
 // decompress_vba attempts to decompress VBA code using ZLIB.

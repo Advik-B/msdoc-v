@@ -66,7 +66,7 @@ pub fn generate_password_hash(password string) []u8 {
 
 	// Generate MD5 hash
 	hash := md5.sum(utf16_password)
-	return hash[:]
+	return hash
 }
 
 // generate_decryption_key creates the decryption key from password and document salt.
@@ -89,7 +89,7 @@ pub fn generate_decryption_key(password string, salt []u8) ![]u8 {
 
 	// Generate final key hash
 	final_hash := md5.sum(combined)
-	return final_hash[:]
+	return final_hash
 }
 
 // verify_password checks if the given password matches the document's password hash.

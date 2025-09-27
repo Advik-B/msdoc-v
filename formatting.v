@@ -100,7 +100,7 @@ pub fn (fe &FormattingExtractor) extract_character_properties(data []u8) !Charac
 	// Parse CHPX (Character Properties eXtended) data
 	// This is a simplified parser - the actual format is quite complex
 	mut i := 0
-	while i < data.len {
+	for i < data.len {
 		if i + 1 >= data.len {
 			break
 		}
@@ -156,7 +156,7 @@ pub fn (fe &FormattingExtractor) extract_paragraph_properties(data []u8) !Paragr
 
 	// Parse PAPX (Paragraph Properties eXtended) data
 	mut i := 0
-	while i < data.len {
+	for i < data.len {
 		if i + 1 >= data.len {
 			break
 		}

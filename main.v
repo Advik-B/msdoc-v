@@ -363,9 +363,9 @@ fn main() {
 	if doc.has_macros() {
 		println('\nVBA Macros:')
 		if modules := doc.get_all_vba_modules() {
-			for module in modules {
-				println('  Module: $module')
-				if code := doc.get_vba_code(module) {
+			for mod_name in modules {
+				println('  Module: $mod_name')
+				if code := doc.get_vba_code(mod_name) {
 					code_preview := if code.len > 100 { code[..100] + '...' } else { code }
 					println('    Code preview: $code_preview')
 				}
