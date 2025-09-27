@@ -5,13 +5,13 @@ import ole2
 import fib
 import macros
 import metadata
-import formatting
+// import formatting
 import writer
 import crypto
 import tests
-import objects
-import streams
-import structures
+// import objects
+// import streams
+// import structures
 
 // Document represents a loaded Microsoft Word .doc file with full functionality.
 pub struct Document {
@@ -21,8 +21,8 @@ mut:
 	fib_data            &fib.FileInformationBlock
 	macro_extractor     &macros.MacroExtractor
 	metadata_extractor  &metadata.MetadataExtractor
-	formatting_extractor &formatting.FormattingExtractor
-	object_pool         ?&objects.ObjectPool
+	// formatting_extractor &formatting.FormattingExtractor
+	// object_pool         ?&objects.ObjectPool
 	decryptor           ?&crypto.RC4
 }
 
@@ -37,17 +37,17 @@ pub fn open(filename string) !&Document {
 	// Initialize extractors
 	macro_extractor := macros.new_macro_extractor(reader)
 	metadata_extractor := metadata.new_metadata_extractor(reader)
-	formatting_extractor := formatting.new_formatting_extractor()
-	object_pool := objects.new_object_pool(reader)
+	// formatting_extractor := formatting.new_formatting_extractor()
+	// object_pool := objects.new_object_pool(reader)
 	
 	return &Document{
 		filename: filename
 		reader: reader
-		fib_data: fib_data
-		macro_extractor: macro_extractor
-		metadata_extractor: metadata_extractor
-		formatting_extractor: formatting_extractor
-		object_pool: object_pool
+		fib_data: &fib_data
+		macro_extractor: &macro_extractor
+		metadata_extractor: &metadata_extractor
+		// formatting_extractor: &formatting_extractor
+		// object_pool: &object_pool
 		decryptor: none
 	}
 }
@@ -106,12 +106,13 @@ fn (mut d Document) setup_decryption(password string) ! {
 	key := crypto.generate_decryption_key(password, salt)!
 	
 	// Create RC4 cipher
-	d.decryptor = crypto.new_rc4(key)!
+	rc4_cipher := crypto.new_rc4(key)!
+	d.decryptor = &rc4_cipher
 }
 
 // text extracts the document text with enhanced functionality.
 pub fn (d &Document) text() !string {
-	if d.is_encrypted() && d.decryptor is none {
+	if d.is_encrypted() && d.decryptor == none {
 		return error('document is encrypted but no decryptor available')
 	}
 	
@@ -202,7 +203,8 @@ pub fn (d &Document) get_vba_project() !macros.VBAProject {
 // get_vba_code returns VBA code for a specific module.
 pub fn (d &Document) get_vba_code(module_name string) !string {
 	project := d.get_vba_project()!
-	if code, found := project.get_module_code(module_name) {
+	code, found := project.get_module_code(module_name)
+	if found {
 		return code
 	}
 	return error('module $module_name not found')
@@ -215,6 +217,8 @@ pub fn (d &Document) get_all_vba_modules() ![]string {
 }
 
 // get_formatted_text extracts text with formatting information.
+// NOTE: Commented out due to formatting module dependency
+/*
 pub fn (d &Document) get_formatted_text() ![]formatting.TextRun {
 	// This would implement full piece table parsing and formatting extraction
 	// For now, return basic text runs
@@ -223,6 +227,7 @@ pub fn (d &Document) get_formatted_text() ![]formatting.TextRun {
 	default_run := formatting.apply_default_formatting(text_content, 0, u32(text_content.len))
 	return [default_run]
 }
+*/
 
 // markdown_text extracts text with hyperlinks formatted as markdown.
 pub fn (d &Document) markdown_text() !string {
@@ -236,6 +241,8 @@ pub fn new_writer() writer.DocumentWriter {
 }
 
 // has_embedded_objects returns true if the document contains embedded objects.
+// NOTE: Commented out due to objects module dependency
+/*
 pub fn (mut d Document) has_embedded_objects() bool {
 	if mut obj_pool := d.object_pool {
 		return obj_pool.has_objects()
@@ -259,6 +266,7 @@ pub fn (mut d Document) get_embedded_object(position u32) !&objects.EmbeddedObje
 	}
 	return error('object pool not initialized')
 }
+*/
 
 fn main() {
 	args := os.args
@@ -331,12 +339,12 @@ fn main() {
 	
 	// Show available streams
 	println('\nStreams:')
-	streams := doc.list_streams()
-	for stream in streams {
+	stream_list := doc.list_streams()
+	for stream in stream_list {
 		println('  $stream')
 	}
 	
-	if streams.len == 0 {
+	if stream_list.len == 0 {
 		println('  No streams found!')
 	}
 	
@@ -363,9 +371,9 @@ fn main() {
 	if doc.has_macros() {
 		println('\nVBA Macros:')
 		if modules := doc.get_all_vba_modules() {
-			for module in modules {
-				println('  Module: $module')
-				if code := doc.get_vba_code(module) {
+			for mod_name in modules {
+				println('  Module: $mod_name')
+				if code := doc.get_vba_code(mod_name) {
 					code_preview := if code.len > 100 { code[..100] + '...' } else { code }
 					println('    Code preview: $code_preview')
 				}
@@ -387,27 +395,27 @@ fn main() {
 
 // create_sample_document creates a sample .doc file to demonstrate writer functionality.
 fn create_sample_document(filename string) ! {
-	mut writer := new_writer()
+	mut doc_writer := new_writer()
 	
-	writer.set_title('Sample V Document')
-	writer.set_author('V msdoc Library')
-	writer.set_subject('Demonstration of V-based .doc creation')
-	writer.set_keywords('V, document, creation, msdoc')
-	writer.set_comments('Created using the V programming language port of msdoc')
+	doc_writer.set_title('Sample V Document')
+	doc_writer.set_author('V msdoc Library')
+	doc_writer.set_subject('Demonstration of V-based .doc creation')
+	doc_writer.set_keywords('V, document, creation, msdoc')
+	doc_writer.set_comments('Created using the V programming language port of msdoc')
 	
-	writer.add_paragraph('Welcome to V msdoc Library')
-	writer.add_paragraph('This document was created using the V programming language.')
-	writer.add_paragraph('The library supports:')
-	writer.add_text('• Reading .doc files\n')
-	writer.add_text('• Extracting text and metadata\n')
-	writer.add_text('• VBA macro analysis\n')
-	writer.add_text('• Document creation\n')
-	writer.add_text('• Encryption support\n')
+	doc_writer.add_paragraph('Welcome to V msdoc Library')
+	doc_writer.add_paragraph('This document was created using the V programming language.')
+	doc_writer.add_paragraph('The library supports:')
+	doc_writer.add_text('• Reading .doc files\n')
+	doc_writer.add_text('• Extracting text and metadata\n')
+	doc_writer.add_text('• VBA macro analysis\n')
+	doc_writer.add_text('• Document creation\n')
+	doc_writer.add_text('• Encryption support\n')
 	
-	writer.add_paragraph('')
-	writer.add_paragraph('This demonstrates the successful conversion from Go to V!')
+	doc_writer.add_paragraph('')
+	doc_writer.add_paragraph('This demonstrates the successful conversion from Go to V!')
 	
-	writer.save(filename)!
+	doc_writer.save(filename)!
 	println('Sample document created: $filename')
 }
 
@@ -415,9 +423,9 @@ fn create_sample_document(filename string) ! {
 fn list_streams_command(filename string) ! {
 	reader := ole2.new_reader(filename)!
 	
-	streams := reader.list_streams()
+	stream_list := reader.list_streams()
 	println('Streams found:')
-	for stream in streams {
+	for stream in stream_list {
 		println("- '$stream'")
 	}
 }
@@ -432,40 +440,40 @@ fn dump_document_command(filename string) ! {
 	println(text)
 	
 	// Extract metadata
-	metadata := doc.get_metadata()!
+	doc_metadata := doc.get_metadata()!
 	println('\n=== Metadata ===')
-	if metadata.title.len > 0 {
-		println('Title: ${metadata.title}')
+	if doc_metadata.title.len > 0 {
+		println('Title: ${doc_metadata.title}')
 	}
-	if metadata.subject.len > 0 {
-		println('Subject: ${metadata.subject}')
+	if doc_metadata.subject.len > 0 {
+		println('Subject: ${doc_metadata.subject}')
 	}
-	if metadata.author.len > 0 {
-		println('Author: ${metadata.author}')
+	if doc_metadata.author.len > 0 {
+		println('Author: ${doc_metadata.author}')
 	}
-	if metadata.keywords.len > 0 {
-		println('Keywords: ${metadata.keywords}')
+	if doc_metadata.keywords.len > 0 {
+		println('Keywords: ${doc_metadata.keywords}')
 	}
-	if metadata.comments.len > 0 {
-		println('Comments: ${metadata.comments}')
+	if doc_metadata.comments.len > 0 {
+		println('Comments: ${doc_metadata.comments}')
 	}
-	if metadata.application_name.len > 0 {
-		println('Application Name: ${metadata.application_name}')
+	if doc_metadata.application_name.len > 0 {
+		println('Application Name: ${doc_metadata.application_name}')
 	}
-	if metadata.company.len > 0 {
-		println('Company: ${metadata.company}')
+	if doc_metadata.company.len > 0 {
+		println('Company: ${doc_metadata.company}')
 	}
-	if metadata.manager.len > 0 {
-		println('Manager: ${metadata.manager}')
+	if doc_metadata.manager.len > 0 {
+		println('Manager: ${doc_metadata.manager}')
 	}
-	if metadata.category.len > 0 {
-		println('Category: ${metadata.category}')
+	if doc_metadata.category.len > 0 {
+		println('Category: ${doc_metadata.category}')
 	}
-	if metadata.content_status.len > 0 {
-		println('Content Status: ${metadata.content_status}')
+	if doc_metadata.content_status.len > 0 {
+		println('Content Status: ${doc_metadata.content_status}')
 	}
-	if metadata.content_type.len > 0 {
-		println('Content Type: ${metadata.content_type}')
+	if doc_metadata.content_type.len > 0 {
+		println('Content Type: ${doc_metadata.content_type}')
 	}
-	println('Created: ${metadata.created}')
+	println('Created: ${doc_metadata.created}')
 }

@@ -86,8 +86,8 @@ pub fn (mut dw DocumentWriter) add_formatted_text(text string, char_props &forma
 		text: text
 		start_pos: start_pos
 		end_pos: end_pos
-		char_props: char_props
-		para_props: para_props
+		char_props: unsafe { char_props }
+		para_props: unsafe { para_props }
 	}
 	
 	dw.formatting_runs << text_run

@@ -65,7 +65,7 @@ mut:
 // new_object_pool creates a new ObjectPool for the given OLE2 reader.
 pub fn new_object_pool(reader &ole2.Reader) ObjectPool {
 	return ObjectPool{
-		reader: reader
+		reader: unsafe { reader }
 		objects: map[u32]&EmbeddedObject{}
 		loaded: false
 	}
