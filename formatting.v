@@ -77,7 +77,7 @@ pub mut:
 // FormattingExtractor handles extraction of text formatting from .doc files.
 pub struct FormattingExtractor {
 mut:
-	reader &structures.PLC  // Reference to piece table or formatting data
+	reader ?&structures.PLC  // Reference to piece table or formatting data
 }
 
 // new_formatting_extractor creates a new formatting extractor.

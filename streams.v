@@ -47,22 +47,23 @@ pub struct TableStream {
 pub mut:
 	data   []u8
 	name   string // "0Table" or "1Table"
-	fib    &fib.FileInformationBlock
+	fib    ?&fib.FileInformationBlock
 }
 
 // new_table_stream creates a new Table stream processor.
-pub fn new_table_stream(data []u8, name string, fib &fib.FileInformationBlock) TableStream {
+pub fn new_table_stream(data []u8, name string, file_fib &fib.FileInformationBlock) TableStream {
 	return TableStream{
 		data: data.clone()
 		name: name
-		fib: fib
+		fib: unsafe { file_fib }
 	}
 }
 
 // get_clx_data extracts the CLX (piece table) data from the table stream.
 pub fn (ts &TableStream) get_clx_data() ![]u8 {
-	clx_offset := ts.fib.rg_fc_lcb.fc_clx
-	clx_size := ts.fib.rg_fc_lcb.lcb_clx
+	fib_ref := ts.fib or { return error('FIB not available') }
+	clx_offset := fib_ref.rg_fc_lcb.fc_clx
+	clx_size := fib_ref.rg_fc_lcb.lcb_clx
 
 	if clx_size == 0 {
 		return []u8{}
@@ -77,8 +78,9 @@ pub fn (ts &TableStream) get_clx_data() ![]u8 {
 
 // get_style_data extracts stylesheet data from the table stream.
 pub fn (ts &TableStream) get_style_data() ![]u8 {
-	stsh_offset := ts.fib.rg_fc_lcb.fc_stsh_f
-	stsh_size := ts.fib.rg_fc_lcb.lcb_stsh_f
+	fib_ref := ts.fib or { return error('FIB not available') }
+	stsh_offset := fib_ref.rg_fc_lcb.fc_stsh_f
+	stsh_size := fib_ref.rg_fc_lcb.lcb_stsh_f
 
 	if stsh_size == 0 {
 		return []u8{}

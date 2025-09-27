@@ -43,7 +43,7 @@ pub enum FieldType {
 
 // get_field_type_name returns the name of the field type
 pub fn get_field_type_name(field_type u8) string {
-	match FieldType(field_type) {
+	match unsafe { FieldType(field_type) } {
 		.hyperlink { return 'HYPERLINK' }
 		.page_ref { return 'PAGEREF' }
 		.ref { return 'REF' }
@@ -57,7 +57,7 @@ pub fn get_field_type_name(field_type u8) string {
 
 // FieldPLC represents a field PLC (Piece Location Collection)
 pub struct FieldPLC {
-	plc &PLC
+	plc ?&PLC
 }
 
 // parse_field_plc creates a FieldPLC from raw bytes
@@ -66,41 +66,42 @@ pub fn parse_field_plc(data []u8) !FieldPLC {
 	plc := parse_plc(data, 2)!
 	
 	return FieldPLC{
-		plc: plc
+		plc: &plc
 	}
 }
 
 // get_fields extracts all fields from the PLC
 pub fn (fplc &FieldPLC) get_fields() ![]Field {
-	if isnil(fplc.plc) {
-		return error('no PLC data available')
-	}
+	plc_ref := fplc.plc or { return error('no PLC data available') }
 
 	mut fields := []Field{}
 
 	// Fields come in pairs: field start and field end
 	mut i := 0
-	for i < fplc.plc.count() {
-		if i + 1 >= fplc.plc.count() {
+	for i < plc_ref.count() {
+		if i + 1 >= plc_ref.count() {
 			break
 		}
 
 		// Get field start
-		start_cp, start_data := fplc.plc.get_entry(i)!
-		field_type := if start_data.len >= 1 { start_data[0] } else { u8(0) }
+		if start_cp, _ := plc_ref.get_range(i) {
+			start_data := plc_ref.get_data_at(i) or { []u8{} }
+			field_type := if start_data.len >= 1 { start_data[0] } else { u8(0) }
 
-		// Get field end
-		end_cp, _ := fplc.plc.get_entry(i + 1)!
+			// Get field end  
+			if end_cp, _ := plc_ref.get_range(i + 1) {
 
-		field := Field{
-			start: start_cp
-			end: end_cp
-			field_type: field_type
-			field_code: ''
-			display_text: ''
+				field := Field{
+					start: start_cp
+					end: end_cp
+					field_type: field_type
+					field_code: ''
+					display_text: ''
+				}
+
+				fields << field
+			}
 		}
-
-		fields << field
 		i += 2
 	}
 
@@ -125,8 +126,8 @@ pub fn extract_hyperlinks(text string, fields []Field) ![]HyperlinkField {
 // parse_hyperlink_field parses a hyperlink field to extract URL and display text
 fn parse_hyperlink_field(field Field, text string) !HyperlinkField {
 	// Get the text content of this field range
-	start_pos := int(field.start.value)
-	end_pos := int(field.end.value)
+	start_pos := field.start.to_int()
+	end_pos := field.end.to_int()
 	
 	if start_pos < 0 || end_pos > text.len || start_pos >= end_pos {
 		return error('invalid field range')
@@ -174,7 +175,7 @@ pub fn (field &Field) is_hyperlink_field() bool {
 
 // get_field_type_enum returns the field type as an enum
 pub fn (field &Field) get_field_type_enum() FieldType {
-	return FieldType(field.field_type)
+	return unsafe { FieldType(field.field_type) }
 }
 
 // str returns a string representation of the field
