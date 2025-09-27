@@ -49,23 +49,23 @@ pub fn new_metadata_extractor(reader &ole2.Reader) MetadataExtractor {
 
 // extract_metadata extracts all available metadata from the document.
 pub fn (me &MetadataExtractor) extract_metadata() !DocumentMetadata {
-	mut metadata := DocumentMetadata{}
+	mut doc_metadata := DocumentMetadata{}
 
 	// Extract SummaryInformation properties
-	me.extract_summary_information(mut metadata) or {
+	me.extract_summary_information(mut doc_metadata) or {
 		// Continue if SummaryInformation is not available
 	}
 
 	// Extract DocumentSummaryInformation properties
-	me.extract_document_summary_information(mut metadata) or {
+	me.extract_document_summary_information(mut doc_metadata) or {
 		// Continue if DocumentSummaryInformation is not available
 	}
 
-	return metadata
+	return doc_metadata
 }
 
 // extract_summary_information extracts metadata from SummaryInformation stream.
-fn (me &MetadataExtractor) extract_summary_information(mut metadata DocumentMetadata) ! {
+fn (me &MetadataExtractor) extract_summary_information(mut doc_metadata DocumentMetadata) ! {
 	data := me.reader.read_stream('SummaryInformation')!
 	
 	// Parse the SummaryInformation property set
@@ -82,11 +82,11 @@ fn (me &MetadataExtractor) extract_summary_information(mut metadata DocumentMeta
 	// offsets, and types according to the OLE Property Set specification
 	
 	// Try to extract some common properties by scanning for recognizable patterns
-	me.parse_property_values(data, mut metadata)
+	me.parse_property_values(data, mut doc_metadata)
 }
 
 // extract_document_summary_information extracts metadata from DocumentSummaryInformation stream.
-fn (me &MetadataExtractor) extract_document_summary_information(mut metadata DocumentMetadata) ! {
+fn (me &MetadataExtractor) extract_document_summary_information(mut doc_metadata DocumentMetadata) ! {
 	data := me.reader.read_stream('DocumentSummaryInformation')!
 	
 	if data.len < 48 {
@@ -94,11 +94,11 @@ fn (me &MetadataExtractor) extract_document_summary_information(mut metadata Doc
 	}
 
 	// Parse document-specific properties
-	me.parse_document_properties(data, mut metadata)
+	me.parse_document_properties(data, mut doc_metadata)
 }
 
 // parse_property_values parses property values from property set data.
-fn (me &MetadataExtractor) parse_property_values(data []u8, mut metadata DocumentMetadata) {
+fn (me &MetadataExtractor) parse_property_values(data []u8, mut doc_metadata DocumentMetadata) {
 	// This is a simplified implementation that looks for UTF-16 strings
 	// The actual implementation would properly parse the property set format
 	
@@ -114,12 +114,12 @@ fn (me &MetadataExtractor) parse_property_values(data []u8, mut metadata Documen
 				prop_data := data[offset + 4..offset + 4 + int(prop_len)]
 				if text := me.extract_utf16_string(prop_data) {
 					// Heuristic assignment based on position and content
-					if metadata.title.len == 0 && text.len > 0 && text.len < 200 {
-						metadata.title = text
-					} else if metadata.author.len == 0 && text.len > 0 && text.len < 100 {
-						metadata.author = text
-					} else if metadata.subject.len == 0 && text.len > 0 && text.len < 200 {
-						metadata.subject = text
+					if doc_metadata.title.len == 0 && text.len > 0 && text.len < 200 {
+						doc_metadata.title = text
+					} else if doc_metadata.author.len == 0 && text.len > 0 && text.len < 100 {
+						doc_metadata.author = text
+					} else if doc_metadata.subject.len == 0 && text.len > 0 && text.len < 200 {
+						doc_metadata.subject = text
 					}
 				}
 				offset += 4 + int(prop_len)
@@ -133,7 +133,7 @@ fn (me &MetadataExtractor) parse_property_values(data []u8, mut metadata Documen
 }
 
 // parse_document_properties parses document-specific properties.
-fn (me &MetadataExtractor) parse_document_properties(data []u8, mut metadata DocumentMetadata) {
+fn (me &MetadataExtractor) parse_document_properties(data []u8, mut doc_metadata DocumentMetadata) {
 	// Similar to parse_property_values but for document-specific properties
 	mut offset := 48
 	
@@ -146,12 +146,12 @@ fn (me &MetadataExtractor) parse_document_properties(data []u8, mut metadata Doc
 				prop_data := data[offset + 4..offset + 4 + int(prop_len)]
 				if text := me.extract_utf16_string(prop_data) {
 					// Try to assign to document-specific fields
-					if metadata.company.len == 0 && text.len > 0 && text.len < 100 {
-						metadata.company = text
-					} else if metadata.category.len == 0 && text.len > 0 && text.len < 100 {
-						metadata.category = text
-					} else if metadata.manager.len == 0 && text.len > 0 && text.len < 100 {
-						metadata.manager = text
+					if doc_metadata.company.len == 0 && text.len > 0 && text.len < 100 {
+						doc_metadata.company = text
+					} else if doc_metadata.category.len == 0 && text.len > 0 && text.len < 100 {
+						doc_metadata.category = text
+					} else if doc_metadata.manager.len == 0 && text.len > 0 && text.len < 100 {
+						doc_metadata.manager = text
 					}
 				}
 				offset += 4 + int(prop_len)
@@ -199,14 +199,14 @@ fn (me &MetadataExtractor) extract_utf16_string(data []u8) ?string {
 
 // extract_basic_properties extracts basic properties that are commonly available.
 pub fn (me &MetadataExtractor) extract_basic_properties() !DocumentMetadata {
-	mut metadata := DocumentMetadata{
+	mut doc_metadata := DocumentMetadata{
 		application_name: 'Microsoft Office Word'
 		content_type: 'application/msword'
 	}
 
 	// Try to get creation time from file system or streams
-	metadata.created = time.now()
-	metadata.last_saved = time.now()
+	doc_metadata.created = time.now()
+	doc_metadata.last_saved = time.now()
 
-	return metadata
+	return doc_metadata
 }
