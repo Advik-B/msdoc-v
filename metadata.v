@@ -43,7 +43,7 @@ mut:
 // new_metadata_extractor creates a new metadata extractor.
 pub fn new_metadata_extractor(reader &ole2.Reader) MetadataExtractor {
 	return MetadataExtractor{
-		reader: reader
+		reader: unsafe { reader }
 	}
 }
 

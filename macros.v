@@ -98,7 +98,7 @@ mut:
 // new_macro_extractor creates a new macro extractor for the given OLE2 reader.
 pub fn new_macro_extractor(reader &ole2.Reader) MacroExtractor {
 	return MacroExtractor{
-		reader: reader
+		reader: unsafe { reader }
 	}
 }
 
