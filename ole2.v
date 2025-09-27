@@ -108,9 +108,17 @@ pub fn new_reader(filename string) !&Reader {
 	mut dir_entries := []DirEntry{}
 	mut current_sector := dir_start_sector
 	
+	println('DEBUG: Directory start sector: $dir_start_sector, FAT length: ${fat.len}')
+	
 	for current_sector >= 0 && current_sector != 0xFFFFFFFE {
+		println('DEBUG: Reading directory sector: $current_sector')
 		sector_offset := u64(current_sector + 1) * sector_size
-		sector_data := read_at(filename, sector_offset, sector_size) or { break }
+		sector_data := read_at(filename, sector_offset, sector_size) or {
+			println('DEBUG: Failed to read directory sector: $err')
+			break
+		}
+		
+		println('DEBUG: Read ${sector_data.len} bytes from directory sector')
 		
 		// Parse directory entries in this sector
 		for entry_offset := 0; entry_offset < sector_size; entry_offset += dir_entry_size {
@@ -119,7 +127,11 @@ pub fn new_reader(filename string) !&Reader {
 			}
 			
 			entry_data := sector_data[entry_offset..entry_offset + dir_entry_size]
-			dir_entry := parse_dir_entry(entry_data)!
+			dir_entry := parse_dir_entry(entry_data) or {
+				println('DEBUG: Failed to parse directory entry at offset $entry_offset: $err')
+				continue
+			}
+			println('DEBUG: Parsed directory entry: type=${dir_entry.object_type}, name_len=${dir_entry.name_len}')
 			dir_entries << dir_entry
 		}
 		
@@ -199,13 +211,19 @@ fn utf16_name_to_string(name [32]u16, name_len u16) string {
 	
 	// Convert UTF-16 to string
 	mut result := ''
-	char_count := (name_len - 2) / 2  // Subtract 2 for null terminator, divide by 2 for UTF-16
+	// name_len includes the null terminator, so subtract 2 bytes and divide by 2
+	char_count := if name_len >= 2 { (name_len - 2) / 2 } else { 0 }
 	
 	for i := 0; i < int(char_count) && i < 32; i++ {
-		if name[i] != 0 {
-			if name[i] < 128 {  // ASCII range
-				result += u8(name[i]).ascii_str()
-			}
+		char_val := name[i]
+		if char_val == 0 {
+			break  // Hit null terminator
+		}
+		if char_val < 128 {  // ASCII range
+			result += u8(char_val).ascii_str()
+		} else {
+			// For non-ASCII, use a placeholder or skip
+			result += '?'
 		}
 	}
 	
@@ -216,9 +234,13 @@ fn utf16_name_to_string(name [32]u16, name_len u16) string {
 pub fn (r &Reader) list_streams() []string {
 	mut streams := []string{}
 	
-	for entry in r.dir_entries {
+	for i, entry in r.dir_entries {
+		// Debug: print entry info
+		println('Entry $i: type=${entry.object_type}, name_len=${entry.name_len}')
+		
 		if entry.object_type == 2 {  // Stream object type
 			stream_name := utf16_name_to_string(entry.name, entry.name_len)
+			println('Stream name: "$stream_name" (length: ${stream_name.len})')
 			if stream_name.len > 0 {
 				streams << stream_name
 			}

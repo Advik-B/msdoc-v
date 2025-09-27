@@ -50,28 +50,75 @@ pub fn (d &Document) list_streams() []string {
 
 // Basic text extraction (simplified version)
 pub fn (d &Document) text() !string {
-	// For now, return a basic implementation
-	// In a full implementation, this would parse the piece table and extract formatted text
+	// Get text length from FIB
 	text_length := d.get_text_length()
 	if text_length == 0 {
 		return ''
 	}
 	
-	// Try to read the Data stream which might contain text
-	if data_stream := d.reader.read_stream('Data') {
-		// Convert bytes to string (simplified)
-		mut text := ''
-		for b in data_stream {
-			if b >= 32 && b < 127 {  // ASCII printable characters
-				text += b.ascii_str()
-			} else if b == 13 || b == 10 {  // CR/LF
-				text += '\n'
-			}
-		}
-		return text
-	} else {
-		return error('failed to read document text')
+	// Read the WordDocument stream again (we already have FIB from it)
+	word_doc_data := d.reader.read_stream('WordDocument')!
+	
+	// The text typically starts after the FIB
+	// For a basic implementation, we'll start reading after a reasonable FIB offset
+	fib_size := 1472  // Typical FIB size for Word 97+
+	
+	if word_doc_data.len <= fib_size {
+		return error('WordDocument stream too small')
 	}
+	
+	// Try to extract text starting after the FIB
+	text_data := word_doc_data[fib_size..]
+	
+	// Convert to string, handling both ANSI and potential Unicode
+	mut text := ''
+	mut i := 0
+	
+	// Limit extraction to reasonable length to avoid reading garbage
+	max_chars := 10000
+	mut chars_processed := 0
+	
+	for i < text_data.len && chars_processed < max_chars {
+		if i + 1 < text_data.len {
+			// Try to handle Unicode (UTF-16)
+			low_byte := text_data[i]
+			high_byte := text_data[i + 1]
+			
+			if high_byte == 0 && low_byte > 0 {
+				// Likely ANSI/ASCII character
+				if low_byte >= 32 && low_byte < 127 {
+					text += low_byte.ascii_str()
+				} else if low_byte == 13 {
+					text += '\n'
+				} else if low_byte == 10 {
+					// Skip LF if we already handled CR
+				} else if low_byte == 9 {
+					text += '\t'
+				}
+				i += 2
+				chars_processed++
+			} else if low_byte == 0 && high_byte == 0 {
+				// Double null - might be end of text
+				break
+			} else {
+				// Skip unknown bytes
+				i++
+			}
+		} else {
+			// Single byte left
+			if text_data[i] >= 32 && text_data[i] < 127 {
+				text += text_data[i].ascii_str()
+			}
+			i++
+			chars_processed++
+		}
+	}
+	
+	if text.len == 0 {
+		return error('no readable text found')
+	}
+	
+	return text.trim_space()
 }
 
 fn main() {
@@ -93,8 +140,13 @@ fn main() {
 	println('Text length: ${doc.get_text_length()}')
 	
 	println('Streams:')
-	for stream in doc.list_streams() {
+	streams := doc.list_streams()
+	for stream in streams {
 		println('  $stream')
+	}
+	
+	if streams.len == 0 {
+		println('  No streams found!')
 	}
 	
 	text := doc.text() or {
