@@ -62,8 +62,8 @@ pub fn new_reader(filename string) !&Reader {
 	}
 	
 	// Parse directory start sector (offset 48-52)
-	dir_start_sector := i32(header_bytes[48]) | (i32(header_bytes[49]) << 8) |
-	                   (i32(header_bytes[50]) << 16) | (i32(header_bytes[51]) << 24)
+	dir_start_sector := i32(u32(header_bytes[48]) | (u32(header_bytes[49]) << 8) |
+	                       (u32(header_bytes[50]) << 16) | (u32(header_bytes[51]) << 24))
 	
 	// Parse FAT sectors count and DIFAT sectors count
 	fat_sector_count := u32(header_bytes[44]) | (u32(header_bytes[45]) << 8) |
@@ -81,8 +81,8 @@ pub fn new_reader(filename string) !&Reader {
 		}
 		offset := i * 4
 		if offset + 3 < difat_bytes.len {
-			sector_num := i32(difat_bytes[offset]) | (i32(difat_bytes[offset+1]) << 8) |
-			             (i32(difat_bytes[offset+2]) << 16) | (i32(difat_bytes[offset+3]) << 24)
+			sector_num := i32(u32(difat_bytes[offset]) | (u32(difat_bytes[offset+1]) << 8) |
+			                 (u32(difat_bytes[offset+2]) << 16) | (u32(difat_bytes[offset+3]) << 24))
 			if sector_num != -1 {
 				fat_sector_numbers << sector_num
 			}
@@ -168,9 +168,9 @@ fn parse_dir_entry(data []u8) !DirEntry {
 	name_len := u16(data[64]) | (u16(data[65]) << 8)
 	object_type := data[66]
 	color_flag := data[67]
-	left_sibling := i32(data[68]) | (i32(data[69]) << 8) | (i32(data[70]) << 16) | (i32(data[71]) << 24)
-	right_sibling := i32(data[72]) | (i32(data[73]) << 8) | (i32(data[74]) << 16) | (i32(data[75]) << 24)
-	child_id := i32(data[76]) | (i32(data[77]) << 8) | (i32(data[78]) << 16) | (i32(data[79]) << 24)
+	left_sibling := i32(u32(data[68]) | (u32(data[69]) << 8) | (u32(data[70]) << 16) | (u32(data[71]) << 24))
+	right_sibling := i32(u32(data[72]) | (u32(data[73]) << 8) | (u32(data[74]) << 16) | (u32(data[75]) << 24))
+	child_id := i32(u32(data[76]) | (u32(data[77]) << 8) | (u32(data[78]) << 16) | (u32(data[79]) << 24))
 	
 	mut clsid := [16]u8{}
 	for i in 0..16 {
@@ -182,7 +182,7 @@ fn parse_dir_entry(data []u8) !DirEntry {
 	                (u64(data[104]) << 32) | (u64(data[105]) << 40) | (u64(data[106]) << 48) | (u64(data[107]) << 56)
 	modified_time := u64(data[108]) | (u64(data[109]) << 8) | (u64(data[110]) << 16) | (u64(data[111]) << 24) |
 	                (u64(data[112]) << 32) | (u64(data[113]) << 40) | (u64(data[114]) << 48) | (u64(data[115]) << 56)
-	starting_sector := i32(data[116]) | (i32(data[117]) << 8) | (i32(data[118]) << 16) | (i32(data[119]) << 24)
+	starting_sector := i32(u32(data[116]) | (u32(data[117]) << 8) | (u32(data[118]) << 16) | (u32(data[119]) << 24))
 	stream_size := u64(data[120]) | (u64(data[121]) << 8) | (u64(data[122]) << 16) | (u64(data[123]) << 24) |
 	              (u64(data[124]) << 32) | (u64(data[125]) << 40) | (u64(data[126]) << 48) | (u64(data[127]) << 56)
 	
