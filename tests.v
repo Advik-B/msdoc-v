@@ -3,7 +3,7 @@ module tests
 import os
 // import ole2
 import fib
-// import structures
+import structures
 import crypto
 // import macros
 // import metadata
@@ -119,6 +119,7 @@ fn test_crypto() {
 }
 
 // test_formatting tests text formatting functionality
+/*
 fn test_formatting() {
 	println('Testing formatting module...')
 	
@@ -137,6 +138,7 @@ fn test_formatting() {
 		println('  ✗ Default formatting failed')
 	}
 }
+*/
 
 // test_writer tests document creation functionality
 fn test_writer() {

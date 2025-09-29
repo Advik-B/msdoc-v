@@ -77,7 +77,7 @@ pub mut:
 // FormattingExtractor handles extraction of text formatting from .doc files.
 pub struct FormattingExtractor {
 mut:
-	reader &structures.PLC  // Reference to piece table or formatting data
+	reader ?&structures.PLC  // Reference to piece table or formatting data
 }
 
 // new_formatting_extractor creates a new formatting extractor.
@@ -180,15 +180,15 @@ pub fn (fe &FormattingExtractor) extract_paragraph_properties(data []u8) !Paragr
 			}
 			0x840E { // Left indent
 				if i + 3 < data.len {
-					props.left_indent = i32(data[i]) | (i32(data[i+1]) << 8) |
-					                   (i32(data[i+2]) << 16) | (i32(data[i+3]) << 24)
+					props.left_indent = i32(u32(data[i]) | (u32(data[i+1]) << 8) |
+					                       (u32(data[i+2]) << 16) | (u32(data[i+3]) << 24))
 					i += 4
 				}
 			}
 			0x840F { // Right indent
 				if i + 3 < data.len {
-					props.right_indent = i32(data[i]) | (i32(data[i+1]) << 8) |
-					                    (i32(data[i+2]) << 16) | (i32(data[i+3]) << 24)
+					props.right_indent = i32(u32(data[i]) | (u32(data[i+1]) << 8) |
+					                        (u32(data[i+2]) << 16) | (u32(data[i+3]) << 24))
 					i += 4
 				}
 			}

@@ -2,8 +2,6 @@ module writer
 
 import os
 import time
-import ole2
-import fib
 import formatting
 
 // DocumentWriter provides functionality for creating new .doc files.
